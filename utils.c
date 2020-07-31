@@ -120,7 +120,7 @@ void addSykQ(int q,double Jq){
   free(idx);
 }
 
-double makeKick(dcomplex *chi,int *idx){
+double makeKick(dcomplex *chi,int pos){
   int i,j,p;
   int count=0;
   int mparity,midx,sidx,state,tstate;
@@ -128,49 +128,44 @@ double makeKick(dcomplex *chi,int *idx){
   double sigma,coupling;
   p=0;
   double complex mul=1;
-  double pref=pow(0.5,q/2);
-  pref=pow(0.5,q);
-  pref=1/sqrt(nstates);
   //pref=1.0;
   int nstates2=nstates*nstates;
   int one=1;
   if((q/2)%2)
     mul*= I;
-  for(i=0;i<nstates;i++)
-    O[i]=0;
+  for(i=0;i<nstates*nstates;i++)
+    chi[i]=0;
   char fname[300];
 
-    for(i=0;i<nstates*nstates;i++)
-      chi[i]=0;
-    for (state=0; state<nstates; state++){
-      coeff=1 +0*I;
-      for(i=0;i<q; i+=2){
-        for(j=idx[i]/2; j< idx[i+1]/2; j++) {
-          if(state & (1<<j)){
-            coeff=coeff*(-1+0*I);
-          }
-        }
+  for(i=0;i<nstates*nstates;i++)
+    chi[i]=0;
+  for (state=0; state<nstates; state++){
+    coeff=1 +0*I;
+    for(j=0; j< pos; j++) {
+      if(state & (1<<j)){
+        coeff=coeff*(-1+0*I);
       }
+    }
 
-      tstate=state;
-      //compute effect of spinflip terms.
-      for(i=0; i<q; i++){
-        midx= idx[i];
-        sidx= idx[i]/2;
-        mparity= idx[i]%2;
-        if(idx[i]%2) {
-          coeff=coeff*(0+1*I);
-          if(tstate &(1<<sidx))
-            coeff=coeff*(-1+0*I);
-        }
-        tstate=tstate^(1<<sidx);
-
+    tstate=state;
+    //compute effect of spinflip terms.
+    for(i=0; i<q; i++){
+      midx= pos;
+      sidx= pos/2;
+      mparity= pos%2;
+      if(mparity) {
+        coeff=coeff*(0+1*I);
+        if(tstate &(1<<sidx))
+          coeff=coeff*(-1+0*I);
       }
-      chi[state+tstate*nstates] += mul*pref*coeff;
+      tstate=tstate^(1<<sidx);
 
     }
+    chi[state+tstate*nstates] += mul*coeff;
+
+  }
 }
-void commutator(dcomplex *arr1,dcomplex *arr2, double *res){
+void commutator(dcomplex *arr1,dcomplex *arr2, dcomplex *res){
   char trans1[1],trans2[1];
   trans1[0]='N';
   trans2[0]='N';
@@ -182,37 +177,40 @@ void commutator(dcomplex *arr1,dcomplex *arr2, double *res){
   zgemm(trans1, trans2, &nstates, &nstates, &nstates, &alpha, arr2, &nstates, arr1, &nstates, &beta, res, &nstates);
 }
 
-//in-place construction o heisenberg operator
-void construct_heisenberg_op(dcomplex *op0, dcomplex *opt,double t){
-  int i;
-  for(i=0; i<nstates;i++){
-    larr[i]=cexp(I*t*eval[i])
-  }
-  muldiag_fromL(op0,larr);
-  for(i=0; i<nstates;i++){
-    larr[i]=cexp(-I*t*eval[i])
-  }
-  muldiag_fromR(op0,larr);
-}
-void muldiag_fromL(dcomplex *arr,double *diag){
+void muldiag_fromL(dcomplex *arr,dcomplex *diag){
   int i;
   //zcopy()
   int inc=1;
   dcomplex fac;
-  for(i=0;i<nstatess; i++){
+  for(i=0;i<nstates; i++){
     fac=diag[i];
     zscal(&nstates,&fac,arr+i,&nstates);
   }
 }
-void muldiag_fromR(dcomplex *arr,double *diag){
+void muldiag_fromR(dcomplex *arr,dcomplex *diag){
   int i;
   //zcopy()
   int inc=1;
   int one=1;
+  dcomplex fac;
   for(i=0;i<nstates; i++){
     fac=diag[i];
-    zscal(&nstates,&fac,arr+i*n1,&one);
+    zscal(&nstates,&fac,arr+i*nstates,&one);
   }
+}
+//in-place construction o heisenberg operator
+void construct_heisenberg_op(dcomplex *op0, double t){
+  int i;
+  dcomplex *larr=(dcomplex *)malloc(nstates*sizeof(dcomplex));
+  for(i=0; i<nstates;i++){
+    larr[i]=cexp(I*t*eval[i]);
+  }
+  muldiag_fromL(op0,larr);
+  for(i=0; i<nstates;i++){
+    larr[i]=cexp(-I*t*eval[i]);
+  }
+  muldiag_fromR(op0,larr);
+  free(larr);
 }
 
 
@@ -238,7 +236,7 @@ void diagonalize_wrapper(double *eval, dcomplex * H, int nstates){
 void toEigenBasis(dcomplex *chi,dcomplex *temp, int nstates){
   char trans1[1];
   char trans2[1];
-  temp=(dcomplex *)malloc(nstates*nstates*sizeof(dcomplex));
+  //temp=(dcomplex *)malloc(nstates*nstates*sizeof(dcomplex));
   trans1[0]='N';
   trans2[0]='C';
   double epszero=1e-8;
@@ -246,17 +244,17 @@ void toEigenBasis(dcomplex *chi,dcomplex *temp, int nstates){
   dcomplex beta=0.0;
   int i;
   for(i=0;i<nstates;i++){
-   assert(creal(chi[nstates*i]-chi[i])<epszero);
-   assert(cimag(chi[nstates*i]-chi[i])<epszero);
+    assert(creal(chi[nstates*i]-chi[i])<epszero);
+    assert(cimag(chi[nstates*i]-chi[i])<epszero);
   }
-//  printf("this is okay \n");
+  //  printf("this is okay \n");
 
   zgemm(trans1, trans1, &nstates, &nstates, &nstates, &alpha, chi, &nstates, H, &nstates, &beta, temp, &nstates);
   zgemm(trans2, trans1, &nstates, &nstates, &nstates, &alpha, H, &nstates, temp, &nstates, &beta, chi, &nstates);
-  free(temp);
+  //free(temp);
   for(i=0;i<nstates;i++){
-   assert(fabs(creal(chi[nstates*i]-chi[i]))<epszero);
-   assert(fabs(cimag(chi[nstates*i]+chi[i]))<epszero);
+    assert(fabs(creal(chi[nstates*i]-chi[i]))<epszero);
+    assert(fabs(cimag(chi[nstates*i]+chi[i]))<epszero);
   }
 
 }

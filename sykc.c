@@ -4,7 +4,7 @@ void addSykQ(int q, double var);
 
 int combination(int n1,int n2);
 
-double makeKick(dcomplex *chi,int *idx);
+double makeKick(dcomplex *chi,int pos);
 void toEigenBasis(dcomplex *chi,dcomplex *temp, int nstates);
 void construct_heisenberg_op(dcomplex *op0, double t);
 void commutator(dcomplex *arr1,dcomplex *arr2, dcomplex *res);
@@ -70,6 +70,7 @@ void main() {
   int np1mc;
   int neigenp=20; // number of eigenprojectors considered.
   int *eigenps=(int *)malloc(neigenp*sizeof(int));
+  int nstates2=nstates*nstates;
   for(i=0; i<neigenp; i++){
     eigenps[i]= (int)(1.0*i*nstates/neigenp);
     printf("%d\n",eigenps[i]);
@@ -79,31 +80,31 @@ void main() {
     resetH();
     addSykQ(4,0.66666);
     printf("Hamiltonian created.\n");
-    t=0.2;
-    T=0.2;
+    t=20;
+    T=20;
 
     diagonalize_wrapper(eval,H,nstates);
     printf("diagonalised\n");
-    int idx[4]={1,0,0,0};
-    makeKick(chi,idx); //set chi1=g in computational basis
+    int idx[1]={0};
+    makeKick(chi1,0); //set chi1=g in computational basis
     toEigenBasis(chi1,chi2,nstates);//rotate chi1=g to eigenbasis,chi2 wksp
-    zcopy(&nstates,chi1,&one,chi2,&one); // set chi2=g,eigenbasis
+    zcopy(&nstates2,chi1,&one,chi2,&one); // set chi2=g,eigenbasis
     construct_heisenberg_op(chi1,t+T); //chi1= g_{T+t}
     construct_heisenberg_op(chi2,t); //set chi2=g_{t}
     commutator(chi1,chi2,temp); //temp= [g_{T+t},g_t]
     commutator(temp,chi2,chi1); // chi1= [temp,g_t]
-    makeKick(chi2,idx); //set chi2=g in computational basis
+    makeKick(chi2,0); //set chi2=g in computational basis
     toEigenBasis(chi2,temp,nstates);//rotate chi2=g to eigenbasis,temp wksp
     commutator(chi1,chi2,temp); // chi1= 
     printf("comm=%f\n",creal(temp[0]));
 
-    makeKick(chi,idx); //set chi1=g in computational basis
+    makeKick(chi1,0); //set chi1=g in computational basis
     toEigenBasis(chi1,chi2,nstates);//rotate chi1=g to eigenbasis,chi2 wksp
-    zcopy(&nstates,chi1,&one,chi2,&one); // set chi2=g,eigenbasis
+    zcopy(&nstates2,chi1,&one,chi2,&one); // set chi2=g,eigenbasis
     construct_heisenberg_op(chi1,t+T); //chi1= g_{T+t}
     construct_heisenberg_op(chi2,t); //set chi2=g_{t}
     commutator(chi1,chi2,temp); //temp= [g_{T+t},g_t]
-    makeKick(chi2,idx); //set chi2=g in computational basis
+    makeKick(chi2,0); //set chi2=g in computational basis
     toEigenBasis(chi2,temp,nstates);//rotate chi2=g to eigenbasis,temp wksp
     commutator(temp,chi2,chi1); // chi1= [temp,g_t]
     commutator(chi1,chi2,temp); // chi1= 
