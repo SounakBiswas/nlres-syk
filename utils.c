@@ -55,6 +55,9 @@ void addSykQ(int q,double Jq){
   int *idx;
   int i,j,p;
   int count=0;
+  FILE *fp,*gp;
+  fp=fopen("couplings.dat","w");
+  gp=fopen("idxs.dat","w");
   int mparity,midx,sidx,state,tstate;
   double complex coeff;
   double sigma,coupling;
@@ -68,8 +71,6 @@ void addSykQ(int q,double Jq){
   double pref=pow(0.5,q/2);
   if((q/2)%2)
     mul*= I;
-  FILE *fp;
-  FILE *gp;
 
   while(idx[q]==N){ // loop over combinations of NCq sets of majoranas
     count++;
@@ -77,6 +78,8 @@ void addSykQ(int q,double Jq){
 
     coupling= random_normal(0.0,sigma);
     //coupling=1.0;
+    fprintf(fp,"%.16f\n",coupling);
+    fprintf(gp,"%d %d %d %d\n",idx[0],idx[1],idx[2],idx[3]);
     for (state=0; state<nstates; state++){
       coeff=1 +0*I;
       //get sigma_z products
@@ -131,8 +134,6 @@ double makeKick(dcomplex *chi,int pos){
   //pref=1.0;
   int nstates2=nstates*nstates;
   int one=1;
-  if((q/2)%2)
-    mul*= I;
   for(i=0;i<nstates*nstates;i++)
     chi[i]=0;
   char fname[300];
@@ -149,7 +150,6 @@ double makeKick(dcomplex *chi,int pos){
 
     tstate=state;
     //compute effect of spinflip terms.
-    for(i=0; i<q; i++){
       midx= pos;
       sidx= pos/2;
       mparity= pos%2;
@@ -160,8 +160,9 @@ double makeKick(dcomplex *chi,int pos){
       }
       tstate=tstate^(1<<sidx);
 
-    }
-    chi[state+tstate*nstates] += mul*coeff;
+    chi[state+tstate*nstates] += coeff;
+    //printf("state %d tstate %d \n",state,tstate);
+    //getchar();
 
   }
 }
