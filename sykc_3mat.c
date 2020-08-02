@@ -38,10 +38,15 @@ extern void   zcopy(int *, dcomplex *, int*, dcomplex*, int *);
 #define TOT_TIME 10
 
 //construct exp(iHt)
-void init_darr(dcomplex *darr,double t){
+void make_expiHt(dcomplex *darr,double t){
   int i;
   for(i=0; i<nstates; i++)
     darr[i]=cexp(1j*eval[i]*t);
+}
+void make_expmbH(dcomplex *darr,double t){
+  int i;
+  for(i=0; i<nstates; i++)
+    darr[i]=cexp(-beta*eval[i]);
 }
 void init_prefs(double t, double T, double (*h)[4], double *pref){
   pref[0]=1;
@@ -100,6 +105,7 @@ void main() {
 
 
   nmaj=N;
+  beta=1/TEMP;
   seed=SEED;
   nrz=NR;
   delta=DELTA;
@@ -108,10 +114,9 @@ void main() {
   nstates=1<<nspins;
   H=(double complex *)malloc(nstates*nstates*sizeof(double complex));
   eval=(double  *)malloc(nstates*sizeof(double));
-  dcomplex *chi1=(dcomplex*)malloc(nstates*nstates*sizeof(dcomplex));
-  dcomplex *chi2=(dcomplex*)malloc(nstates*nstates*sizeof(dcomplex));
-  dcomplex *temp=(dcomplex*)malloc(nstates*nstates*sizeof(dcomplex));
-  dcomplex *darr=(dcomplex*)malloc(nstates*sizeof(dcomplex));
+  chi1=(dcomplex*)malloc(nstates*nstates*sizeof(dcomplex));
+  chi2=(dcomplex*)malloc(nstates*nstates*sizeof(dcomplex));
+  darr=(dcomplex*)malloc(nstates*sizeof(dcomplex));
 
 
   // dcomplex * evec;
@@ -121,7 +126,7 @@ void main() {
   int np1mc;
   int neigenp=20; // number of eigenprojectors considered.
   int *eigenps=(int *)malloc(neigenp*sizeof(int));
-  int nstates2=nstates*nstates;
+  nstates2=nstates*nstates;
   double pref[6];
   double htime[6][4];
   dcomplex *chi3;
@@ -170,28 +175,30 @@ void main() {
           targ=-htime[term][0];
 
           if(fabs(targ)>tol_eps){
-            init_darr(darr,targ);
+            make_expiHt(darr,targ);
             muldiag_fromR(chi2,darr);
           }
           targ=htime[term][0]-htime[term][1];
 
           if(fabs(targ)>tol_eps){
-            init_darr(darr,targ);
+            make_expiHt(darr,targ);
             muldiag_fromL(chi2,darr);
           }
           multiply_quick(chi1,chi2,chi3);
+          printf("elem chi3=%f+I%f\n",creal(chi3[0]),cimag(chi3[0]));
 
           targ=htime[term][1]-htime[term][2];
           if(fabs(targ)>tol_eps){
-            init_darr(darr,targ);
+            make_expiHt(darr,targ);
             muldiag_fromL(chi3,darr);
           }
 
           multiply_quick(chi1,chi3,chi2);
+          printf("elem chiwut=%f+I%f\n",creal(chi2[0]),cimag(chi2[0]));
 
           targ=htime[term][2]-htime[term][3];
           if(fabs(targ)>tol_eps){
-            init_darr(darr,targ);
+            make_expiHt(darr,targ);
             muldiag_fromL(chi2,darr);
           }
           multiply_quick(chi1,chi2,chi3);
@@ -199,14 +206,24 @@ void main() {
 
           targ=htime[term][3];
           if(fabs(targ)>tol_eps){
-            init_darr(darr,targ);
+            make_expiHt(darr,targ);
             muldiag_fromL(chi3,darr);
           }
-          matelem+=chi3[0]*pref[term];
+          if(FINITE_TEMP){
+            make_expmbH(darr,beta);
+            muldiag_fromL(chi3,darr);
+            for(i=0; i<nstates; i++)
+              matelem+= chi3[i+i*nstates]*pref[term];
+          
+          
+          }
+          else
+            matelem+=chi3[0]*pref[term];
           printf("term=%d, mat=%f +i%f\n",term,creal(chi3[0]),cimag(chi3[0]));
 
         }
         printf("t=%f T=%f, whatve we got:%f +I%f\n",t,T,creal(matelem),cimag(matelem));
+        getchar();
 
       }
     }
@@ -215,6 +232,5 @@ void main() {
   free(eval);
   free(chi1);
   free(chi2);
-  free(temp);
 }
 
