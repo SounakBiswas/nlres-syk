@@ -3,9 +3,9 @@
 #include <complex.h>
 #include <math.h>
 #include <assert.h>
-#define N 8
+#define N 10
 #define FNUM 1
-#define NR 1
+#define NR 10
 #define SEED 115
 #define DELTA 0.01
 #define dcomplex double complex
