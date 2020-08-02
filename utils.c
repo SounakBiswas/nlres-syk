@@ -458,6 +458,8 @@ double zt_calc_term2_simp(double t, double T){
   for(i=0; i<nstates; i++)
     chi2[i]=0;
   chi2[0]=1;
+  if(nmaj%8!=0)
+    chi2[1]=1;
 
 
   int term;
@@ -476,12 +478,17 @@ double zt_calc_term2_simp(double t, double T){
   make_expiHt(darr,targ);
   muldiag_vec(chi2,darr);
 
-  matelem+=4*cimag(chi2[0]);
+  if(nmaj%8==0)
+    matelem+=4*cimag(chi2[0]);
+  else
+    matelem+=2*cimag(chi2[0]+chi2[1]);
   //printf("intermediate %f %f\n",creal(chi2[0]),cimag(chi2[0]));
   //gTg0 calculated.
   for(i=0; i<nstates; i++)
     chi2[i]=0;
   chi2[0]=1;
+  if(nmaj%8!=0)
+    chi2[1]=1;
   mv_multiply_quick(chi1,chi2,chi3);
 
   targ=-t;
@@ -503,7 +510,10 @@ double zt_calc_term2_simp(double t, double T){
   targ=t;
   make_expiHt(darr,targ);
   muldiag_vec(chi2,darr);
-  matelem+= -4*cimag(chi2[0]);
+  if(nmaj%8==0)
+    matelem+= -4*cimag(chi2[0]);
+  else
+    matelem+= -2*cimag(chi2[0]+chi2[1]);
 
   return matelem;
 
@@ -517,6 +527,8 @@ double zt_calc_term1_simp(double t, double T){
   for(i=0; i<nstates; i++)
     chi2[i]=0;
   chi2[0]=1;
+  if(nmaj%8!=0)
+    chi2[1]=1;
 
 
   int term;
@@ -539,11 +551,19 @@ double zt_calc_term1_simp(double t, double T){
 
   make_expiHt(darr,targ);
   muldiag_vec(chi2,darr);
-  matelem+=4*cimag(chi2[0]);
+
+  
+  if(nmaj%8==0)
+    matelem+=4*cimag(chi2[0]);
+  else
+    matelem+=2*cimag(chi2[0]+chi2[1]);
 
   for(i=0; i<nstates; i++)
     chi2[i]=0;
+
   chi2[0]=1;
+  if(nmaj%8!=0)
+    chi2[1]=1;
 
   mv_multiply_quick(chi1,chi2,chi3);
   targ=-t;
@@ -563,7 +583,10 @@ double zt_calc_term1_simp(double t, double T){
   mv_multiply_quick(chi1,chi3,chi2);
 
 
-  matelem+= -4*cimag(chi2[0]);
+  if(nmaj%8==0)
+    matelem+= -4*cimag(chi2[0]);
+  else
+    matelem+= -2*cimag(chi2[0]+chi2[1]);
   return matelem;
 
 

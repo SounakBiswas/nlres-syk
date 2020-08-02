@@ -3,7 +3,7 @@
 #include <complex.h>
 #include <math.h>
 #include <assert.h>
-#define N 10
+#define N 16
 #define FNUM 1
 #define NR 10
 #define SEED 115

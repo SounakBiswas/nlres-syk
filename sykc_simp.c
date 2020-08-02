@@ -4,6 +4,7 @@ void addSykQ(int q, double var);
 void multiply_quick(dcomplex *A,dcomplex*B,dcomplex*C);
 void muldiag_fromL(dcomplex *arr,dcomplex *diag);
 void muldiag_fromR(dcomplex *arr,dcomplex *diag);
+void mkl_free_buffers();
 
 int combination(int n1,int n2);
 
@@ -38,21 +39,23 @@ void toEigenBasis(dcomplex *chi,dcomplex *temp, int nstates);
 dcomplex calc_gE( double eps, double *eval, dcomplex *rotchi );
 dcomplex calc_gt( double eps, double *eval, dcomplex *rotchi );
 extern void   zcopy(int *, dcomplex *, int*, dcomplex*, int *);
-#define TSTEPS 32
-#define TOT_TIME 10
+#define TSTEPS 64
+#define TOT_TIME 20
 
 //construct exp(iHt)
 void main() {
   int rz;
+  FILE *fp;
   char fname1[300],fname2[300], fname3[300];
   char fname4[300];
-  FILE *fp;
+  char fname[300];
   int i,j;
   double tgrid[TSTEPS];
   double Tgrid[TSTEPS];
   double dt=TOT_TIME/TSTEPS;
   double dT=TOT_TIME/TSTEPS;
   double t,T;
+  double *data1,*data2;
   int tidx,Tidx;
   int nop=combination(N,4)+combination(N,2);
 
@@ -70,6 +73,8 @@ void main() {
   H=(double complex *)malloc(nstates*nstates*sizeof(double complex));
   eval=(double  *)malloc(nstates*sizeof(double));
   chi1=(dcomplex*)malloc(nstates*nstates*sizeof(dcomplex));
+  data1=(double*)malloc(TSTEPS*TSTEPS*sizeof(double));
+  data2=(double*)malloc(TSTEPS*TSTEPS*sizeof(double));
   //if(FINITE_TEMP)
   // chi2=(dcomplex*)malloc(nstates*nstates*sizeof(dcomplex));
   //else
@@ -117,14 +122,29 @@ void main() {
           matelem=calc_term1_simp(t,T);
         else
           matelem=zt_calc_term1_simp(t,T);
+        data1[tidx+Tidx*TSTEPS]=matelem;
 
         if(FINITE_TEMP)
           matelem=calc_term2_simp(t,T);
         else
           matelem=zt_calc_term2_simp(t,T);
+        data2[tidx+Tidx*TSTEPS]=matelem;
 
       }
     }
+    sprintf(fname,"./outfiles/pump_probe_N%d_seed%d_rz%d.dat",N,FNUM,rz);
+    fp=fopen(fname,"w");
+    for(i=0; i<TSTEPS*TSTEPS; i++){
+      fprintf(fp,"%.16f \n",data1[i]);
+    }
+    fclose(fp);
+
+    sprintf(fname,"./outfiles/rephasing_N%d_seed%d_rz%d.dat",N,FNUM,rz);
+    fp=fopen(fname,"w");
+    for(i=0; i<TSTEPS*TSTEPS; i++){
+      fprintf(fp,"%.16f \n",data2[i]);
+    }
+    fclose(fp);
   }
   free(H);
   free(eval);
