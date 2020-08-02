@@ -52,8 +52,8 @@ void main() {
   int i,j;
   double tgrid[TSTEPS];
   double Tgrid[TSTEPS];
-  double dt=TOT_TIME/TSTEPS;
-  double dT=TOT_TIME/TSTEPS;
+  double dt=(TOT_TIME/(1.0*TSTEPS));
+  double dT=(TOT_TIME/(1.0*TSTEPS));
   double t,T;
   double *data1,*data2;
   int tidx,Tidx;
@@ -98,8 +98,6 @@ void main() {
     resetH();
     addSykQ(4,0.66666);
     printf("Hamiltonian created.\n");
-    t=20;
-    T=20;
 
     diagonalize_wrapper(eval,H,nstates);
     printf("diagonalised\n");
@@ -114,7 +112,6 @@ void main() {
 
     for(tidx=0; tidx<TSTEPS; tidx++){
       for(Tidx=0; Tidx<TSTEPS; Tidx++){
-        //printf("tidx %d Tidx %d\n",tidx,Tidx);
 
         t=tidx*dt;
         T=Tidx*dT;
